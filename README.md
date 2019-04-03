@@ -1,1 +1,4 @@
 # TutankhamunentsMD
+```
+npm install
+```
