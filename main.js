@@ -41,7 +41,7 @@ function injectIIFE(dom) {
     };
 })();`
   dom.window.eval(evalFunction)
- 
+
   return dom
 
 }
@@ -65,12 +65,15 @@ const filePromises = (eachFile) => {
 }
 
 function manipulateDOM(dom) {
-  const qSA = (el) => {
-    return  dom.window.document.querySelectorAll(el)
-    }
   let allPromises;
-  Array.prototype.forEach.call(qSA('img'), function (element) {
-
+  const qSA = (el) => {
+    return dom.window.document.querySelectorAll(el)
+  }
+  const awaitSerialize = async () => {
+    return await dom.serialize()
+  }
+  awaitSerialize().then(Array.prototype.forEach.call(qSA('img'), function (element) {
+    console.log(element.src)
     https.get(element.src, (resp) => {
       resp.setEncoding('base64');
       body = "data:" + resp.headers["content-type"] + ";base64,";
@@ -84,13 +87,32 @@ function manipulateDOM(dom) {
     }).on('error', (e) => {
       console.log(`Got error: ${e.message}`);
     });
-  });
+  }))
+
+
+
   const newMessageHandler = () => {
 
-
-  
+    Array.prototype.forEach.call(qSA('img'), function (element) {
+      if (!element.src.match('^http')) {
+        return
+      }
+      https.get(element.src, (resp) => {
+        console.log(element.src)
+        resp.setEncoding('base64');
+        body = "data:" + resp.headers["content-type"] + ";base64,";
+        resp.on('data', (data) => {
+          body += data
+        });
+        resp.on('end', () => {
+          element.src = body
+          //return res.json({result: body, status: 'success'});
+        });
+      }).on('error', (e) => {
+        console.log(`Got error: ${e.message}`);
+      });
+    });
     let sourceArray = []
-    let imgArray = []
     Array.prototype.forEach.call(qSA('link[rel="stylesheet"]'), function (element) {
       let el;
       if (argv.file) {
@@ -115,28 +137,27 @@ function manipulateDOM(dom) {
       //allImages = imgArray.map(fetcher)
     }
 
-      Promise.all(allPromises).then(onfulfilled => {
-        const totalBufferContent = Buffer.concat(onfulfilled)
-        return totalBufferContent.toString()
-      }).then((buf) => {
-        let styleEl = dom.window.document.createElement('STYLE')
+    Promise.all(allPromises)
+      .then(
+        onfulfilled => {
+          const totalBufferContent = Buffer.concat(onfulfilled)
+          return totalBufferContent.toString()
+        })
+      .then(
+        (buf) => {
+          let styleEl = dom.window.document.createElement('STYLE')
+          styleEl.textContent = buf
+          dom.window.document.head.appendChild(styleEl)
 
-        styleEl.textContent = buf
-        dom.window.document.head.appendChild(styleEl)
-        if (!argv.output) {
-          argv.output = 'index.static.html'
-          fs.writeFile(argv.output, dom.serialize(), (err) => {
-            if (err) throw err;
-            console.log('Done')
-          })
-
+          if (!argv.output) {
+            argv.output = 'index.static.html'
+            fs.writeFile(argv.output, dom.serialize(), (err) => {
+              if (err) throw err;
+              console.log('Done')
+            })
+          }
         }
-
-      })
-
-
-
-
+      )
   }
   dom.window.addEventListener("newMessage", newMessageHandler, false);
 
