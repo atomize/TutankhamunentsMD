@@ -41,7 +41,9 @@ function injectIIFE(dom) {
     };
 })();`
   dom.window.eval(evalFunction)
+ 
   return dom
+
 }
 
 const fetcher = (eachFile) => {
@@ -112,7 +114,7 @@ function manipulateDOM(dom) {
       allPromises = sourceArray.map(fetcher);
       //allImages = imgArray.map(fetcher)
     }
-    process.nextTick(() => {
+
       Promise.all(allPromises).then(onfulfilled => {
         const totalBufferContent = Buffer.concat(onfulfilled)
         return totalBufferContent.toString()
@@ -131,7 +133,7 @@ function manipulateDOM(dom) {
         }
 
       })
-    });
+
 
 
 
