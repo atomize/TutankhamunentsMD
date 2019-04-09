@@ -4,7 +4,13 @@
 <meta charset="utf-8">
 <link rel="icon" href="favicon.png">
 <title>Prism</title>
-<style media="" data-href="style.css">@import url(https://fonts.googleapis.com/css?family=Questrial);
+
+
+
+
+
+
+<style>@import url(https://fonts.googleapis.com/css?family=Questrial);
 @import url(https://fonts.googleapis.com/css?family=Arvo);
 
 @font-face {
@@ -128,7 +134,7 @@ header, footer {
 	padding: 30px calc(50% - 450px);
 	color: white;
 	text-shadow: 0 -1px 2px black;
-	background: url("https://prismjs.com/img/spectrum.png") fixed;
+	background: url(img/spectrum.png) fixed;
 }
 
 header:before,
@@ -266,7 +272,7 @@ header {
 			top: 0; right: 0; bottom: 0; left: 0;
 			z-index: -1;
 			border-radius: inherit;
-			background: url("https://prismjs.com/img/spectrum.png") fixed;
+			background: url(img/spectrum.png) fixed;
 		}
 
 		#theme > label:nth-of-type(n+2) {
@@ -417,13 +423,7 @@ label a.owner:not(:hover) {
 		margin-bottom: 1em;
 		margin-right: 1em;
 	}
-</style>
-
-
-
-
-
-<style>/**
+/**
  * prism.js default theme for JavaScript, CSS and HTML
  * Based on dabblet (http://dabblet.com)
  * @author Lea Verou
@@ -562,11 +562,11 @@ pre[class*="language-"] {
 .token.entity {
 	cursor: help;
 }
-</style></head>
+</style><style></style></head>
 <body>
 
 <header style="padding: 30px 62px;">
-	<div class="intro" data-src="templates/header-main.html" data-type="text/html"><h1><a href="index.html"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTcwIj4KCTxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik01NS4zNyAxMzEuNUg0OC40djkuMTNoNi45N2MxLjY3IDAgMi45Mi0uNCAzLjc4LTEuMjIuODUKCS0uOCAxLjI4LTEuOTIgMS4yOC0zLjMzcy0uNDMtMi41NC0xLjI4LTMuMzVjLS44Ni0uOC0yLjEyLTEuMi0zLjc4LTEuMm0yOS41MgoJNi40Yy4zLS41My40Ny0xLjIuNDctMi4wNCAwLTEuMzUtLjQ1LTIuNC0xLjM3LTMuMi0uOTItLjc2LTIuMTQtMS4xNS0zLjY1CgktMS4xNUg3Mi45djguNTJoNy4zMmMyLjI2IDAgMy44Mi0uNyA0LjY3LTIuMU0xMDAgMEwwIDE3MGgyMDBMMTAwIDBNNjAuODYKCTE0MS4wM2MtMS4zIDEuMjItMy4xIDEuODQtNS4zMyAxLjg0SDQ4LjR2Ny41NUg0NnYtMjEuMmg5LjUzYzIuMjQgMCA0LjAyLjYzCgk1LjM0IDEuODcgMS4zIDEuMjMgMS45NiAyLjg4IDEuOTYgNC45NSAwIDIuMS0uNjYgMy43NS0xLjk3IDQuOThtMjQuNSA5LjRsCgktNS4xLTguMTRoLTcuMzd2OC4xMmgtMi40di0yMS4yaDEwLjE0YzIuMTUgMCAzLjg4LjYgNS4xOCAxLjggMS4zIDEuMTggMS45NQoJMi44IDEuOTUgNC44NCAwIDIuNjQtMS4xIDQuNDQtMy4zIDUuNC0uNi4yOC0xLjIyLjUtMS44Mi42bDUuNTcgOC41NmgtMi44NW0KCTEzLjQzIDBoLTIuNHYtMjEuMmgyLjR2MjEuMm0yMy41Ni0xLjMyYy0xLjQ4IDEuMDUtMy41MyAxLjU3LTYuMTYgMS41Ny0yLjk2IDAKCS01LjIzLS42LTYuNzgtMS44NS0xLjQtMS4xLTIuMTgtMi43LTIuMzctNC43NGgyLjVjLjA4IDEuNDUuNzggMi41NiAyLjEgMy4zMwoJMS4xNi42NyAyLjY4IDEgNC41OCAxIDMuOTcgMCA1Ljk1LTEuMjUgNS45NS0zLjc0IDAtLjg2LS4zNS0xLjUzLTEuMDctMi4wMi0uNwoJLS41LTEuNi0uOS0yLjY4LTEuMi0xLjA3LS4zMy0yLjI0LS42My0zLjQ4LS45cy0yLjQtLjY1LTMuNS0xLjA4LTEuOTctMS4wMgoJLTIuNjgtMS43M2MtLjctLjcyLTEuMDctMS42OC0xLjA3LTIuOSAwLTEuNzMuNjUtMy4xMyAxLjk3LTQuMjIgMS4zMi0xLjA4CgkzLjMyLTEuNjIgNi0xLjYyIDIuNjcgMCA0Ljc1LjYgNi4yMyAxLjg1IDEuMzQgMS4xIDIuMDUgMi41IDIuMTQgNC4yaC0yLjQ2YwoJLS4yMi0xLjc2LTEuMzUtMi45Mi0zLjQtMy41LS43Mi0uMi0xLjYyLS4zLTIuNy0uM3MtMS45OC4xLTIuNzIuMzVjLS43NC4yNQoJLTEuMy41NS0xLjcuOS0uNDIuMzUtLjcuNzQtLjgzIDEuMTdzLS4yLjg4LS4yIDEuMzZjMCAuNS4yLjkzLjYyIDEuMzNzLjk2Ljc1CgkxLjY1IDEuMDNjLjY4LjI4IDEuNDYuNTIgMi4zMy43My44OC4yIDEuNzcuNDMgMi42Ny42NS45LjIyIDEuOC40OCAyLjY4Ljc3Ljg3CgkuMyAxLjY1LjY1IDIuMzMgMS4xIDEuNTMuOTYgMi4yOCAyLjI3IDIuMjggMy45NCAwIDItLjc0IDMuNS0yLjIyIDQuNTVtMjguODQKCTEuMzJ2LTE3LjU0bC03Ljg0IDEwLjA4LTcuOTctMTAuMDh2MTcuNTRIMTMzdi0yMS4yaDIuNzhsNy41OCAxMC4wNiA3LjQ1CgktMTAuMDVoMi44djIxLjJoLTIuNCIvPgo8L3N2Zz4=" alt="Prism"></a></h1>
+	<div class="intro" data-src="templates/header-main.html" data-type="text/html"><h1><a href="index.html"><img src="logo.svg" alt="Prism"></a></h1>
 
 <a href="download.html" class="download-button">Download</a>
 
@@ -2251,6 +2251,7 @@ var html = Prism.highlight(code, Prism.languages.haml, 'haml');<span class="toke
 		<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>https://usetypo3.com/fs-code-snippet.html<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>A code snippet content element powered by Prism.js for TYPO3 CMS<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>li</span><span class="token punctuation">&gt;</span></span>
 		<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>https://auralinna.blog/post/2017/code-syntax-highlighting-with-angular-and-prismjs<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>Code syntax highlighting with Angular and Prism.js<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>li</span><span class="token punctuation">&gt;</span></span>
 		<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>https://mkaz.blog/wordpress/code-syntax-highlighting-in-gutenberg/<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>Code syntax highlighting in Gutenberg, WordPress block editor<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>li</span><span class="token punctuation">&gt;</span></span>
+		<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>https://karlkaufmann.com/writing/technotes/code-highlighting-prism-drupal<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>Code Highlighting with Prism.js in Drupal<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>li</span><span class="token punctuation">&gt;</span></span>
 	<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>ul</span><span class="token punctuation">&gt;</span></span>
 
 	<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>p</span><span class="token punctuation">&gt;</span></span>Please note that the tutorials listed here are not verified to contain correct information. Read at your risk and always check the official documentation here if something doesn’t work :)<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>p</span><span class="token punctuation">&gt;</span></span>
@@ -2486,7 +2487,7 @@ var html = Prism.highlight(code, Prism.languages.haml, 'haml');<span class="toke
 <section id="plugins">
 	<h1><a href="/#plugins">Plugins</a></h1>
 	<p>Plugins are additional scripts (and CSS code) that extend Prism’s functionality. Many of the following plugins are official, but are released as plugins to keep the Prism Core small for those who don’t need the extra functionality.</p>
-	<ul class="plugin-list"><li><a href="plugins/line-highlight">Line Highlight</a></li><li><a href="plugins/line-numbers">Line Numbers</a></li><li><a href="plugins/show-invisibles">Show Invisibles</a></li><li><a href="plugins/autolinker">Autolinker</a></li><li><a href="plugins/wpd">WebPlatform Docs</a></li><li><a href="plugins/custom-class">Custom Class</a></li><li><a href="plugins/file-highlight">File Highlight</a></li><li><a href="plugins/show-language">Show Language</a></li><li><a href="plugins/jsonp-highlight">JSONP Highlight</a></li><li><a href="plugins/highlight-keywords">Highlight Keywords</a></li><li><a href="plugins/remove-initial-line-feed">Remove initial line feed</a></li><li><a href="plugins/previewers">Previewers</a></li><li><a href="plugins/autoloader">Autoloader</a></li><li><a href="plugins/keep-markup">Keep Markup</a></li><li><a href="plugins/command-line">Command Line</a></li><li><a href="plugins/unescaped-markup">Unescaped Markup</a></li><li><a href="plugins/normalize-whitespace">Normalize Whitespace</a></li><li><a href="plugins/data-uri-highlight">Data-URI Highlight</a></li><li><a href="plugins/toolbar">Toolbar</a></li><li><a href="plugins/copy-to-clipboard">Copy to Clipboard Button</a></li></ul>
+	<ul class="plugin-list"></ul>
 
 	<p>No assembly required to use them. Just select them in the <a href="download.html">download</a> page.</p>
 	<p>It’s very easy to <a href="extending.html#writing-plugins">write your own Prism plugins</a>. Did you write a plugin for Prism that you want added to this list? <a href="https://github.com/LeaVerou/prism" target="_blank">Send a pull request</a>!</p>
@@ -2515,6 +2516,7 @@ var html = Prism.highlight(code, Prism.languages.haml, 'haml');<span class="toke
 		<li><a href="https://usetypo3.com/fs-code-snippet.html">A code snippet content element powered by Prism.js for TYPO3 CMS</a></li>
 		<li><a href="https://auralinna.blog/post/2017/code-syntax-highlighting-with-angular-and-prismjs">Code syntax highlighting with Angular and Prism.js</a></li>
 		<li><a href="https://mkaz.blog/wordpress/code-syntax-highlighting-in-gutenberg/">Code syntax highlighting in Gutenberg, WordPress block editor</a></li>
+		<li><a href="https://karlkaufmann.com/writing/technotes/code-highlighting-prism-drupal">Code Highlighting with Prism.js in Drupal</a></li>
 	</ul>
 
 	<p>Please note that the tutorials listed here are not verified to contain correct information. Read at your risk and always check the official documentation here if something doesn’t work :)</p>

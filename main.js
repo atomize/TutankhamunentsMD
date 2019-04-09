@@ -1,21 +1,18 @@
-const fetch = require('node-fetch');
+const argv = require('minimist')(process.argv.slice(2))
 const fs = require('fs');
 const jsdom = require("jsdom");
-var https = require('https');
-const {
-  JSDOM
-} = jsdom;
-const argv = require('minimist')(process.argv.slice(2))
+const {JSDOM} = jsdom;
 const options = {
   runScripts: "dangerously",
   resources: "usable",
 }
+const rp = require("request-promise");
+
 
 function injectIIFE(dom) {
   let evalFunction = `
   let reqNumber = 0;
   let doneNumber = 0;
-(function bam() {
   function SendMessage(e) {
     if (window.CustomEvent) {
         var event = new CustomEvent("newMessage", {
@@ -25,6 +22,19 @@ function injectIIFE(dom) {
         window.dispatchEvent(event);
     }
   }
+  function SendMessage2(e) {
+    if (window.CustomEvent) {
+        var event = new CustomEvent("newMessage2", {
+            bubbles: true,
+            cancelable: true
+        });
+        window.dispatchEvent(event);
+    }
+  }
+(function bam() {
+  
+
+ 
     var origOpen = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function () {
         console.log('request started!');
@@ -40,18 +50,28 @@ function injectIIFE(dom) {
         origOpen.apply(this, arguments);
     };
 })();`
+
+
   dom.window.eval(evalFunction)
 
   return dom
 
 }
 
-const fetcher = (eachFile) => {
+/* const fetcher = (eachFile) => {
   return fetch(eachFile)
     .then(response => {
       return response.buffer();
     })
-}
+} */
+
+const fetcher = eachFile => {
+  
+  return rp(eachFile, { encoding: null }).then(response => {
+    
+      return response;
+  });
+};
 const filePromises = (eachFile) => {
   return new Promise((resolve, reject) => {
     fs.readFile(eachFile, (err, data) => {
@@ -64,56 +84,61 @@ const filePromises = (eachFile) => {
   })
 }
 
+const writeFile = (dom, path) => {
+  !path?path='index.static.html':null
+  let html = dom.serialize()
+  fs.writeFile(path, html, (err) => {
+    if (err) throw err;
+    console.log('Done writing')
+  })
+}
+
 function manipulateDOM(dom) {
   let allPromises;
-  const qSA = (el) => {
+  const qSA = (el, dom) => {
     return dom.window.document.querySelectorAll(el)
   }
-  const awaitSerialize = async () => {
-    return await dom.serialize()
+  const arrayqSA = (el, cb) => {
+    return Array.prototype.forEach.call(dom.window.document.querySelectorAll(el), cb)
   }
-  awaitSerialize().then(Array.prototype.forEach.call(qSA('img'), function (element) {
-    console.log(element.src)
-    https.get(element.src, (resp) => {
-      resp.setEncoding('base64');
-      body = "data:" + resp.headers["content-type"] + ";base64,";
-      resp.on('data', (data) => {
-        body += data
-      });
-      resp.on('end', () => {
-        element.src = body
-        //return res.json({result: body, status: 'success'});
-      });
-    }).on('error', (e) => {
-      console.log(`Got error: ${e.message}`);
-    });
-  }))
 
+const deleteScripts =()=> arrayqSA('script', function (element) {
+  element.parentNode.removeChild(element)
+});
+async function getImages(sourceArray) {
+  let type = sourceArray[0].split('.').pop()
+ // console.log(type)
+ if(!sourceArray[0].match('^http[s].*'))
+ {
+   return
+ }
+  let returner = await rp(sourceArray[0], { encoding: null }).then(buf => `data:image/${type};base64,` + buf.toString('base64'));
+ return sourceArray[1].src = returner
+  
+}
+const imgs = async (dom) => {
+  let sourceArray = []
+  arrayqSA('img', function (element) {
+   
+    sourceArray.push([element.src, element])
+  })
+  
+let proms = sourceArray.map(getImages)
+Promise.all(proms).then((onfulfilled)=>{
+console.log(onfulfilled+" this is ur pall")
+dom.serialize()
+//dom.window.eval(`SendMessage2(document)`)
+}).then(()=>{
+  dom.window.eval(`SendMessage(document)`)
+})
+}
 
-
+//imgs(dom)
   const newMessageHandler = () => {
-
-    Array.prototype.forEach.call(qSA('img'), function (element) {
-      if (!element.src.match('^http')) {
-        return
-      }
-      https.get(element.src, (resp) => {
-        console.log(element.src)
-        resp.setEncoding('base64');
-        body = "data:" + resp.headers["content-type"] + ";base64,";
-        resp.on('data', (data) => {
-          body += data
-        });
-        resp.on('end', () => {
-          element.src = body
-          //return res.json({result: body, status: 'success'});
-        });
-      }).on('error', (e) => {
-        console.log(`Got error: ${e.message}`);
-      });
-    });
+    
     let sourceArray = []
-    Array.prototype.forEach.call(qSA('link[rel="stylesheet"]'), function (element) {
+
+    arrayqSA('link[rel="stylesheet"]', function (element) {
       let el;
       if (argv.file) {
         el = element.href.replace('file:\/\/', '')
@@ -124,18 +149,11 @@ function manipulateDOM(dom) {
       element.parentNode.removeChild(element)
     });
 
-    Array.prototype.forEach.call(qSA('script'), function (element) {
 
-      element.parentNode.removeChild(element)
-    });
-
-    if (argv.file) {
-      allPromises = sourceArray.map(filePromises)
-      //allImages = imgArray.map(filePromises)
-    } else if (argv.url) {
-      allPromises = sourceArray.map(fetcher);
-      //allImages = imgArray.map(fetcher)
-    }
+deleteScripts()
+    allPromises = argv.file ?
+      sourceArray.map(filePromises) :
+      sourceArray.map(fetcher)
 
     Promise.all(allPromises)
       .then(
@@ -148,26 +166,25 @@ function manipulateDOM(dom) {
           let styleEl = dom.window.document.createElement('STYLE')
           styleEl.textContent = buf
           dom.window.document.head.appendChild(styleEl)
-
-          if (!argv.output) {
-            argv.output = 'index.static.html'
-            fs.writeFile(argv.output, dom.serialize(), (err) => {
-              if (err) throw err;
-              console.log('Done')
-            })
-          }
         }
-      )
-  }
-  dom.window.addEventListener("newMessage", newMessageHandler, false);
+      ).then(()=>{
+        !argv.output ? argv.output = 'index.static.html' : argv.output
+       
 
+       
+        
+        dom.window.eval(`SendMessage2(document)`)
+      }).then(()=>{ writeFile(dom, argv.output)})
+   
+  }
+  
+  dom.window.addEventListener("newMessage2", imgs(dom), false);
+  dom.window.addEventListener("newMessage", newMessageHandler, false);
+  
 }
 
-if (argv.file) {
-  JSDOM.fromFile(argv.file, options).then(injectIIFE).then(manipulateDOM)
-} else if (argv.url) {
-  JSDOM.fromURL(argv.url, options).then(injectIIFE).then(manipulateDOM)
-} else {
-  console.log('gimme a file!')
-  return
-};
+(argv.file) ?
+JSDOM.fromFile(argv.file, options).then(injectIIFE).then(manipulateDOM):
+  (argv.url) ?
+  JSDOM.fromURL(argv.url, options).then(injectIIFE).then(manipulateDOM) :
+  console.log('gimme a file!');
