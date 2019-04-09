@@ -3,7 +3,9 @@ const fs = require("fs");
 const jsdom = require("jsdom");
 var https = require("https");
 
-const { JSDOM } = jsdom;
+const {
+    JSDOM
+} = jsdom;
 const argv = require("minimist")(process.argv.slice(2));
 const options = {
     runScripts: "dangerously",
@@ -14,6 +16,7 @@ function injectIIFE(dom) {
     let evalFunction = `
   let reqNumber = 0;
   let doneNumber = 0;
+
 (function bam() {
   function SendMessage(e) {
     if (window.CustomEvent) {
@@ -28,8 +31,9 @@ function injectIIFE(dom) {
     XMLHttpRequest.prototype.open = function () {
         console.log('request started!');
         reqNumber++
-        this.addEventListener('load', function () {
+        this.addEventListener('loadend', function () {
             console.log('request completed!');
+            console.log(this.readyState)
            doneNumber++
             if (reqNumber == doneNumber){
               SendMessage(document)
@@ -44,7 +48,13 @@ function injectIIFE(dom) {
 }
 
 const fetcher = eachFile => {
-    return rp(eachFile, { encoding: null }).then(response => {
+    console.log(eachFile)
+    /* if (!eachFile.match('^http[s]')){
+        return
+    } else */
+    return rp(eachFile, {
+        encoding: null
+    }).then(response => {
         return response;
     });
 };
@@ -70,7 +80,10 @@ const base64img = (resp, element) => {
         //return res.json({result: body, status: 'success'});
     });
 };
-const httpImg = function(element) {
+const httpImg = (element) => {
+    if (!element.src.match('^http[s]')) {
+        return
+    }
     https
         .get(element.src, resp => {
             base64img(resp, element);
@@ -87,39 +100,27 @@ const qsaForEach = (el, dom, cb) => {
 };
 
 function manipulateDOM(dom) {
-    const qSA = el => {
-        return dom.window.document.querySelectorAll(el);
-    };
-
     let allPromises;
-
-    qsaForEach("img", dom, httpImg);
+    //qsaForEach("img", dom, httpImg);
+    let sourceArray = [];
+    const styleSheetHandler = (element) => {
+        let el;
+        el = argv.file ? element.href.replace("file://", "") : element.href
+        sourceArray.push(el);
+        element.parentNode.removeChild(element);
+    }
     const newMessageHandler = () => {
-        let sourceArray = [];
-        let imgArray = [];
-        Array.prototype.forEach.call(qSA('link[rel="stylesheet"]'), function(
-            element
-        ) {
-            let el;
-            if (argv.file) {
-                el = element.href.replace("file://", "");
-            } else if (argv.url) {
-                el = element.href;
-            }
-            sourceArray.push(el);
-            element.parentNode.removeChild(element);
-        });
 
-        Array.prototype.forEach.call(qSA("script"), function(element) {
-            element.parentNode.removeChild(element);
+        qsaForEach('link[rel="stylesheet"]', dom, styleSheetHandler)
+        qsaForEach("img", dom, httpImg)
+        qsaForEach("script", dom, (el) => {
+            el.parentNode.removeChild(el);
         });
 
         if (argv.file) {
             allPromises = sourceArray.map(filePromises);
-            //allImages = imgArray.map(filePromises)
         } else if (argv.url) {
             allPromises = sourceArray.map(fetcher);
-            //allImages = imgArray.map(fetcher)
         }
 
         Promise.all(allPromises)
@@ -129,10 +130,9 @@ function manipulateDOM(dom) {
             })
             .then(buf => {
                 let styleEl = dom.window.document.createElement("STYLE");
-
                 styleEl.textContent = buf;
                 dom.window.document.head.appendChild(styleEl);
-
+            }).then(() => {
                 if (!argv.output) {
                     argv.output = "index.static.html";
                     fs.writeFile(argv.output, dom.serialize(), err => {
@@ -142,6 +142,7 @@ function manipulateDOM(dom) {
                 }
             });
     };
+
     dom.window.addEventListener("newMessage", newMessageHandler, false);
 }
 
