@@ -221,3 +221,36 @@ if (argv.file) {
   console.log('gimme a file!')
   return
 };
+
+async function getImages(url) {
+  let type = url.split('.').pop()
+  let returner = await fetch(url).then(r => r.buffer()).then(buf => `data:image/${type};base64,` + buf.toString('base64'));
+  return returner
+}
+
+ /* const xhrResp = (resp, url) => {
+      resp.setEncoding('base64');
+      body = "data:" + resp.headers["content-type"] + ";base64,";
+      resp.on('data', (data) => {
+        body += data
+      });
+      resp.on('end', () => {
+        url[1].src = body
+        //console.log(url[1].src + ' hey')
+        doneNumber++
+        console.log(doneNumber + ' out of ' + reqNumber + ' are done')
+        dom.window.eval(`SendMessage(document)`)
+      });
+    }
+    sourceArray.forEach(function (url) {
+      if (url[0].match('^https')) {
+        https.get(url[0], resp => xhrResp(resp, url)).on('error', (e) => {
+          console.log(`Got error: ${e.message}`);
+        });
+      } else {
+        http.get(url[0], resp => xhrResp(resp, url)).on('error', (e) => {
+          console.log(`Got error: ${e.message}`);
+        });
+      }
+
+    }) */

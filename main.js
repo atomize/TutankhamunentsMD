@@ -1,173 +1,155 @@
-const fetch = require('node-fetch');
-const fs = require('fs');
+const argv = require("minimist")(process.argv.slice(2));
+const fs = require("fs");
 const jsdom = require("jsdom");
-var https = require('https');
 const {
   JSDOM
 } = jsdom;
-const argv = require('minimist')(process.argv.slice(2))
 const options = {
   runScripts: "dangerously",
-  resources: "usable",
-}
+  resources: "usable"
+};
+const rp = require("request-promise");
 
-function injectIIFE(dom) {
+
+const injectIIFE = (dom) => {
   let evalFunction = `
-  let reqNumber = 0;
-  let doneNumber = 0;
-(function bam() {
-  function SendMessage(e) {
-    if (window.CustomEvent) {
-        var event = new CustomEvent("newMessage", {
-            bubbles: true,
-            cancelable: true
-        });
-        window.dispatchEvent(event);
-    }
-  }
-    var origOpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function () {
-        console.log('request started!');
-        reqNumber++
-        this.addEventListener('load', function () {
-            console.log('request completed!');
-           doneNumber++
-            if (reqNumber == doneNumber){
-              SendMessage(document)
-              console.log('message sent')
-            }
-        });
-        origOpen.apply(this, arguments);
+    let reqNumber = 0;
+    let doneNumber = 0;
+
+    (function bam() {
+      function SendMessage(e) {
+        if (window.CustomEvent) {
+            var event = new CustomEvent("newMessage", {
+                bubbles: true,
+                cancelable: true
+            });
+            window.dispatchEvent(event);
+        }
+      }
+        var origOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function () {
+            reqNumber++
+            console.log('request #'+reqNumber+' started!');
+            this.addEventListener('loadend', function () {
+                
+              doneNumber++
+              console.log('request #'+doneNumber+' completed!');
+              
+                if (reqNumber == doneNumber){
+                  SendMessage(document)
+                  console.log('All XHR requests on the page have finished')
+                }
+            });
+            origOpen.apply(this, arguments);
+        };
+    })();`;
+  dom.window.eval(evalFunction);
+  return dom;
+}
+
+const fetcher = eachFile => {
+  const _include_headers = function (body, response, resolveWithFullResponse) {
+    return {
+      'headers': response.headers,
+      'data': body
     };
-})();`
-  dom.window.eval(evalFunction)
-
-  return dom
-
-}
-
-const fetcher = (eachFile) => {
-  return fetch(eachFile)
-    .then(response => {
-      return response.buffer();
-    })
-}
-const filePromises = (eachFile) => {
-  return new Promise((resolve, reject) => {
-    fs.readFile(eachFile, (err, data) => {
-      if (err) {
-        reject(err)
+  };
+  if (!eachFile[0].match('^http[s]')) {
+    return
+  } else
+    return rp(eachFile[0], {
+      encoding: null,
+      transform: _include_headers,
+      resolveWithFullResponse: true
+    }).then(response => {
+      if (eachFile[1]) {
+        let srcString = "data:" + response.headers["content-type"] + ";base64," + Buffer.from(response.data).toString('base64');
+        eachFile[1].src = srcString
       } else {
-        resolve(data)
+        return response.data
       }
     })
-  })
-}
+};
+const filePromises = eachFile => {
+  return new Promise((resolve, reject) => {
+    fs.readFile(eachFile[0], (err, data) => {
+      if (err) {
+        //reject(err);
+        resolve(fetcher(eachFile))
+      } else {
+        resolve(data);
+      }
+    });
+  });
+};
+
+const qsaForEach = (el, dom, cb) => {
+  return Array.prototype.forEach.call(
+    dom.window.document.querySelectorAll(el),
+    cb
+  );
+};
 
 function manipulateDOM(dom) {
-  let allPromises;
-  const qSA = (el) => {
-    return dom.window.document.querySelectorAll(el)
-  }
-  const awaitSerialize = async () => {
-    return await dom.serialize()
-  }
-  awaitSerialize().then(Array.prototype.forEach.call(qSA('img'), function (element) {
-    console.log(element.src)
-    https.get(element.src, (resp) => {
-      resp.setEncoding('base64');
-      body = "data:" + resp.headers["content-type"] + ";base64,";
-      resp.on('data', (data) => {
-        body += data
-      });
-      resp.on('end', () => {
-        element.src = body
-        //return res.json({result: body, status: 'success'});
-      });
-    }).on('error', (e) => {
-      console.log(`Got error: ${e.message}`);
-    });
-  }))
-
-
-
   const newMessageHandler = () => {
-
-    Array.prototype.forEach.call(qSA('img'), function (element) {
-      if (!element.src.match('^http')) {
-        return
-      }
-      https.get(element.src, (resp) => {
-        console.log(element.src)
-        resp.setEncoding('base64');
-        body = "data:" + resp.headers["content-type"] + ";base64,";
-        resp.on('data', (data) => {
-          body += data
-        });
-        resp.on('end', () => {
-          element.src = body
-          //return res.json({result: body, status: 'success'});
-        });
-      }).on('error', (e) => {
-        console.log(`Got error: ${e.message}`);
-      });
-    });
-    let sourceArray = []
-    Array.prototype.forEach.call(qSA('link[rel="stylesheet"]'), function (element) {
+    let allPromises;
+    let sourceArray = [];
+    const styleSheetHandler = (element) => {
       let el;
-      if (argv.file) {
-        el = element.href.replace('file:\/\/', '')
-      } else if (argv.url) {
-        el = element.href
-      }
-      sourceArray.push(el);
-      element.parentNode.removeChild(element)
+      el = argv.file ? element.href.replace("file://", "") : element.href
+      sourceArray.push([el]);
+      element.parentNode.removeChild(element);
+    }
+    const imgHandler = (element) => {
+      sourceArray.push([element.src, element]);
+    }
+    qsaForEach("img", dom, imgHandler)
+    qsaForEach('link[rel="stylesheet"]', dom, styleSheetHandler)
+    qsaForEach("script", dom, (el) => {
+      el.parentNode.removeChild(el);
     });
-
-    Array.prototype.forEach.call(qSA('script'), function (element) {
-
-      element.parentNode.removeChild(element)
-    });
-
+    qsaForEach("style",dom,(elem)=>{
+      while(elem.attributes.length > 0)
+    elem.removeAttribute(elem.attributes[0].name);
+    console.log(elem.textContent.match(/url\(.*\)/ig))
+    })
+   
     if (argv.file) {
-      allPromises = sourceArray.map(filePromises)
-      //allImages = imgArray.map(filePromises)
+      allPromises = sourceArray.map(filePromises);
     } else if (argv.url) {
       allPromises = sourceArray.map(fetcher);
-      //allImages = imgArray.map(fetcher)
     }
-
     Promise.all(allPromises)
-      .then(
-        onfulfilled => {
-          const totalBufferContent = Buffer.concat(onfulfilled)
-          return totalBufferContent.toString()
-        })
-      .then(
-        (buf) => {
-          let styleEl = dom.window.document.createElement('STYLE')
-          styleEl.textContent = buf
-          dom.window.document.head.appendChild(styleEl)
-
-          if (!argv.output) {
-            argv.output = 'index.static.html'
-            fs.writeFile(argv.output, dom.serialize(), (err) => {
-              if (err) throw err;
-              console.log('Done')
-            })
-          }
+      .then(onfulfilled => {
+        const totalBufferContent = Buffer.concat(onfulfilled.filter(Boolean));
+        return totalBufferContent.toString();
+      })
+      .then(buf => {
+        let styleEl = dom.window.document.createElement("STYLE");
+        styleEl.textContent = buf;
+        dom.window.document.head.appendChild(styleEl);
+      }).then(() => {
+        if (!argv.output) {
+          argv.output = "index.static.html";
+          fs.writeFile(argv.output, dom.serialize(), err => {
+            if (err) throw err;
+            console.log("Done");
+          });
         }
-      )
-  }
+      });
+  };
   dom.window.addEventListener("newMessage", newMessageHandler, false);
-
 }
 
 if (argv.file) {
-  JSDOM.fromFile(argv.file, options).then(injectIIFE).then(manipulateDOM)
+  JSDOM.fromFile(argv.file, options)
+    .then(injectIIFE)
+    .then(manipulateDOM);
 } else if (argv.url) {
-  JSDOM.fromURL(argv.url, options).then(injectIIFE).then(manipulateDOM)
+  JSDOM.fromURL(argv.url, options)
+    .then(injectIIFE)
+    .then(manipulateDOM);
 } else {
-  console.log('gimme a file!')
-  return
-};
+  console.log("gimme a file!");
+  return;
+}

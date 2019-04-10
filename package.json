@@ -9,9 +9,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "htinliner": "^0.4.0",
+    "html-embed-stylesheets": "^1.3.0",
     "jsdom": "^14.0.0",
     "minimist": "^1.2.0",
     "node-fetch": "^2.3.0",
-    "pkg": "^4.3.7"
+<<<<<<< HEAD
+    "npm": "^6.9.0",
+=======
+>>>>>>> master
+    "pkg": "^4.3.7",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4"
   }
 }
