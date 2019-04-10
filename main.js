@@ -58,6 +58,32 @@ const fetcher = eachFile => {
         return response;
     });
 };
+const fetcher2 = eachFile => {
+    var _include_headers = function (body, response, resolveWithFullResponse) {
+        return {
+            'headers': response.headers,
+            'data': body
+        };
+    };
+
+    if (!eachFile[0].match('^http[s]')) {
+        return
+    } else
+        console.log(eachFile[0].split('.').pop())
+    return rp(eachFile[0], {
+        encoding: null,
+        transform: _include_headers,
+        resolveWithFullResponse: true
+    }).then(response => {
+        console.log(response.data)
+
+        let srcString = "data:" + response.headers["content-type"] + ";base64," + Buffer.from(response.data).toString('base64');
+
+        console.log(srcString)
+        eachFile[1].src = srcString
+
+    })
+};
 const filePromises = eachFile => {
     return new Promise((resolve, reject) => {
         fs.readFile(eachFile, (err, data) => {
@@ -84,8 +110,7 @@ const httpImg = (element) => {
     if (!element.src.match('^http[s]')) {
         return
     }
-    https
-        .get(element.src, resp => {
+    https.get(element.src, resp => {
             base64img(resp, element);
         })
         .on("error", e => {
@@ -98,9 +123,13 @@ const qsaForEach = (el, dom, cb) => {
         cb
     );
 };
+const qsaArray = (el, dom) => {
+    return Array.from(dom.window.document.querySelectorAll(el))
+}
 
 function manipulateDOM(dom) {
     let allPromises;
+    let allPromises2;
     //qsaForEach("img", dom, httpImg);
     let sourceArray = [];
     const styleSheetHandler = (element) => {
@@ -109,10 +138,21 @@ function manipulateDOM(dom) {
         sourceArray.push(el);
         element.parentNode.removeChild(element);
     }
+    let imgArray = [];
+    const imgHandler = (element) => {
+        let el;
+        el = element.src
+        imgArray.push([el, element]);
+    }
+    /* qsaForEach("img", dom, imgHandler)
+    allPromises2 = imgArray.map(fetcher2)
+    Promise.all(allPromises2) */
     const newMessageHandler = () => {
-
+        qsaForEach("img", dom, imgHandler)
+        allPromises2 = imgArray.map(fetcher2)
+        Promise.all(allPromises2)
         qsaForEach('link[rel="stylesheet"]', dom, styleSheetHandler)
-        qsaForEach("img", dom, httpImg)
+        // qsaForEach("img", dom, httpImg)
         qsaForEach("script", dom, (el) => {
             el.parentNode.removeChild(el);
         });
@@ -123,6 +163,7 @@ function manipulateDOM(dom) {
             allPromises = sourceArray.map(fetcher);
         }
 
+
         Promise.all(allPromises)
             .then(onfulfilled => {
                 const totalBufferContent = Buffer.concat(onfulfilled);
@@ -132,6 +173,7 @@ function manipulateDOM(dom) {
                 let styleEl = dom.window.document.createElement("STYLE");
                 styleEl.textContent = buf;
                 dom.window.document.head.appendChild(styleEl);
+
             }).then(() => {
                 if (!argv.output) {
                     argv.output = "index.static.html";
