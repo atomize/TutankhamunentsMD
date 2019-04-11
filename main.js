@@ -45,7 +45,28 @@ const injectIIFE = (dom) => {
   dom.window.eval(evalFunction);
   return dom;
 }
-
+const rawFetch = eachFile => {
+  const _include_headers = function (body, response, resolveWithFullResponse) {
+    return {
+      'headers': response.headers,
+      'data': body
+    };
+  };
+  return rp(eachFile, {
+    encoding: null,
+    transform: _include_headers,
+    resolveWithFullResponse: true
+  }).then(response => {
+      
+      if(response.headers['content-type']===undefined){
+        return
+      } else {
+      console.log(response.headers['content-type']+' from here')
+      let srcString = "data:" + response.headers["content-type"] + ";base64," + Buffer.from(response.data).toString('base64');
+      return [eachFile, srcString]}
+    
+  })
+}
 const fetcher = eachFile => {
   const _include_headers = function (body, response, resolveWithFullResponse) {
     return {
@@ -85,7 +106,7 @@ const filePromises = eachFile => {
 const qsaForEach = (el, dom, cb) => {
   return Array.prototype.forEach.call(
     dom.window.document.querySelectorAll(el),
-    cb
+    cb,
   );
 };
 
@@ -106,9 +127,24 @@ function manipulateDOM(dom) {
     }
 
     const styleHandler = (elem) => {
-      while (elem.attributes.length > 0)
-        elem.removeAttribute(elem.attributes[0].name);
-      console.log(elem.textContent.match(/url\(.*\)/ig))
+      while (elem.attributes.length > 0){elem.removeAttribute(elem.attributes[0].name);}
+        
+      let noQuotesArray = elem.textContent.match(/url\(.*\)/ig).map(str=>{
+        return str.replace(/url\((.*)\)/ig,"$1")
+      })
+      let urlArray = elem.textContent.match(/url\(.*\)/ig).map(str=>{
+        return str.replace(/url\((.*)\)/ig,"$1").replace(/["']/ig,"")
+      })  
+      
+      let fetcherArray = urlArray.map((a,i,c)=>{
+       return a[i] = [c[i],elem]
+      })
+console.log(fetcherArray)
+      return Promise.all(urlArray.map(rawFetch)).then((a,c,i)=>{
+       // console.log(a.filter(Boolean))
+       // console.log(urlArray)
+       console.log("styleHandler done")
+      })
     }
 
     const scriptHandler = (el) => {
@@ -116,6 +152,7 @@ function manipulateDOM(dom) {
     }
 
     const bufferHandler = (onfulfilled) => {
+      console.log('bufferHandler started')
       const totalBufferContent = Buffer.concat(onfulfilled.filter(Boolean));
       const styleEl = dom.window.document.createElement("STYLE");
       styleEl.textContent = totalBufferContent.toString();
