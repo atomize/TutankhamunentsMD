@@ -10,7 +10,6 @@ const options = {
 };
 const rp = require("request-promise");
 
-
 const injectIIFE = (dom) => {
   let evalFunction = `
     let reqNumber = 0;
@@ -19,7 +18,7 @@ const injectIIFE = (dom) => {
     (function bam() {
       function SendMessage(e) {
         if (window.CustomEvent) {
-            var event = new CustomEvent("newMessage", {
+            var event = new CustomEvent("xhrDone", {
                 bubbles: true,
                 cancelable: true
             });
@@ -91,54 +90,62 @@ const qsaForEach = (el, dom, cb) => {
 };
 
 function manipulateDOM(dom) {
-  const newMessageHandler = () => {
-    let allPromises;
+  const xhrDoneHandler = () => {
+
     let sourceArray = [];
+
     const styleSheetHandler = (element) => {
       let el;
       el = argv.file ? element.href.replace("file://", "") : element.href
       sourceArray.push([el]);
       element.parentNode.removeChild(element);
     }
+
     const imgHandler = (element) => {
       sourceArray.push([element.src, element]);
     }
+
+    const styleHandler = (elem) => {
+      while (elem.attributes.length > 0)
+        elem.removeAttribute(elem.attributes[0].name);
+      console.log(elem.textContent.match(/url\(.*\)/ig))
+    }
+
+    const scriptHandler = (el) => {
+      el.parentNode.removeChild(el);
+    }
+
+    const bufferHandler = (onfulfilled) => {
+      const totalBufferContent = Buffer.concat(onfulfilled.filter(Boolean));
+      const styleEl = dom.window.document.createElement("STYLE");
+      styleEl.textContent = totalBufferContent.toString();
+      dom.window.document.head.appendChild(styleEl);
+      return dom.serialize()
+    }
+    const writeFile = (html) => {
+      if (!argv.output) {
+        argv.output = "index.static.html";
+        fs.writeFile(argv.output, html, err => {
+          if (err) throw err;
+          console.log("Done writing " + argv.output);
+        });
+      }
+    }
+
     qsaForEach("img", dom, imgHandler)
     qsaForEach('link[rel="stylesheet"]', dom, styleSheetHandler)
-    qsaForEach("script", dom, (el) => {
-      el.parentNode.removeChild(el);
-    });
-    qsaForEach("style",dom,(elem)=>{
-      while(elem.attributes.length > 0)
-    elem.removeAttribute(elem.attributes[0].name);
-    console.log(elem.textContent.match(/url\(.*\)/ig))
-    })
-   
-    if (argv.file) {
-      allPromises = sourceArray.map(filePromises);
-    } else if (argv.url) {
-      allPromises = sourceArray.map(fetcher);
-    }
+    qsaForEach("script", dom, scriptHandler);
+    qsaForEach("style", dom, styleHandler)
+
+    let allPromises = argv.url ?
+      sourceArray.map(fetcher) :
+      sourceArray.map(filePromises)
+
     Promise.all(allPromises)
-      .then(onfulfilled => {
-        const totalBufferContent = Buffer.concat(onfulfilled.filter(Boolean));
-        return totalBufferContent.toString();
-      })
-      .then(buf => {
-        let styleEl = dom.window.document.createElement("STYLE");
-        styleEl.textContent = buf;
-        dom.window.document.head.appendChild(styleEl);
-      }).then(() => {
-        if (!argv.output) {
-          argv.output = "index.static.html";
-          fs.writeFile(argv.output, dom.serialize(), err => {
-            if (err) throw err;
-            console.log("Done");
-          });
-        }
-      });
+      .then(bufferHandler)
+      .then(writeFile);
   };
-  dom.window.addEventListener("newMessage", newMessageHandler, false);
+  dom.window.addEventListener("xhrDone", xhrDoneHandler, false);
 }
 
 if (argv.file) {
